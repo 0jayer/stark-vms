@@ -13,6 +13,8 @@ class Sidebar extends StatelessWidget {
 
     int selectedIndex = 0;
     if (currentPath.startsWith('/vehicles')) {
+      selectedIndex = 1;
+    } else if (currentPath.startsWith('/dashboard')) {
       selectedIndex = 0;
     }
 
@@ -30,6 +32,9 @@ class Sidebar extends StatelessWidget {
           onDestinationSelected: (index) {
             switch (index) {
               case 0:
+                context.go('/dashboard');
+                break;
+              case 1:
                 context.go('/vehicles');
                 break;
             }
@@ -111,6 +116,11 @@ class Sidebar extends StatelessWidget {
             ),
           ),
           destinations: const [
+            NavigationRailDestination(
+              icon: Icon(Icons.dashboard_outlined),
+              selectedIcon: Icon(Icons.dashboard, color: Colors.white),
+              label: Text('Dashboard'),
+            ),
             NavigationRailDestination(
               icon: Icon(Icons.directions_car_outlined),
               selectedIcon: Icon(Icons.directions_car, color: Colors.white),

@@ -27,7 +27,7 @@ class _LoginScreenState extends State<LoginScreen> {
   void _handleLogin() {
     if (_formKey.currentState!.validate()) {
       isLoggedIn = true;
-      context.go('/vehicles');
+      context.go('/dashboard');
     }
   }
 

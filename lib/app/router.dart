@@ -1,4 +1,5 @@
 import 'package:go_router/go_router.dart';
+import '../screens/dashboard_screen.dart';
 import '../screens/login_screen.dart';
 import '../screens/shell_screen.dart';
 import '../screens/vehicle_form_screen.dart';
@@ -18,8 +19,8 @@ final GoRouter appRouter = GoRouter(
       return '/login';
     }
 
-    if (isLoggedIn && loggingIn) {
-      return '/vehicles';
+    if (isLoggedIn && (loggingIn || state.uri.path == '/')) {
+      return '/dashboard';
     }
 
     return null;
@@ -32,6 +33,10 @@ final GoRouter appRouter = GoRouter(
     ShellRoute(
       builder: (context, state, child) => ShellScreen(child: child),
       routes: [
+        GoRoute(
+          path: '/dashboard',
+          builder: (context, state) => const DashboardScreen(),
+        ),
         GoRoute(
           path: '/vehicles',
           builder: (context, state) => const VehicleListScreen(),
@@ -53,4 +58,3 @@ final GoRouter appRouter = GoRouter(
     ),
   ],
 );
-
