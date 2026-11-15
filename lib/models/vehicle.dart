@@ -6,11 +6,37 @@ enum VehicleStatus {
 
   final String label;
   const VehicleStatus(this.label);
+
+  /// Maps backend status string (ACTIVE, MAINTENANCE, INACTIVE) to [VehicleStatus].
+  static VehicleStatus fromBackendString(String? value) {
+    switch (value?.trim().toUpperCase()) {
+      case 'ACTIVE':
+        return VehicleStatus.active;
+      case 'MAINTENANCE':
+        return VehicleStatus.maintenance;
+      case 'INACTIVE':
+        return VehicleStatus.inactive;
+      default:
+        return VehicleStatus.active;
+    }
+  }
+
+  /// Converts this [VehicleStatus] to backend enum format (ACTIVE, MAINTENANCE, INACTIVE).
+  String toBackendString() {
+    switch (this) {
+      case VehicleStatus.active:
+        return 'ACTIVE';
+      case VehicleStatus.maintenance:
+        return 'MAINTENANCE';
+      case VehicleStatus.inactive:
+        return 'INACTIVE';
+    }
+  }
 }
 
-/// Represents a vehicle entity in the Vehicle Management System.
+/// Represents a vehicle entity matching the Spring Boot backend contract.
 class Vehicle {
-  final String id;
+  final int id;
   final String vehicleNumber;
   final String company;
   final String type;
@@ -28,9 +54,38 @@ class Vehicle {
     this.status = VehicleStatus.active,
   });
 
+  /// Deserializes a [Vehicle] from a backend JSON map.
+  factory Vehicle.fromJson(Map<String, dynamic> json) {
+    final rawId = json['id'];
+    final id = (rawId is int) ? rawId : int.tryParse(rawId?.toString() ?? '') ?? 0;
+
+    return Vehicle(
+      id: id,
+      vehicleNumber: json['vehicleNumber'] as String? ?? '',
+      company: json['company'] as String? ?? '',
+      type: json['type'] as String? ?? '',
+      brand: json['brand'] as String? ?? '',
+      model: json['model'] as String? ?? '',
+      status: VehicleStatus.fromBackendString(json['status'] as String?),
+    );
+  }
+
+  /// Serializes this [Vehicle] to a backend JSON map.
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'vehicleNumber': vehicleNumber,
+      'company': company,
+      'type': type,
+      'brand': brand,
+      'model': model,
+      'status': status.toBackendString(),
+    };
+  }
+
   /// Creates a copy of this vehicle with optional replacement fields.
   Vehicle copyWith({
-    String? id,
+    int? id,
     String? vehicleNumber,
     String? company,
     String? type,

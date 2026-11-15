@@ -64,7 +64,7 @@ class _VehicleFormScreenState extends State<VehicleFormScreen> {
 
     if (widget.isEditing) {
       final updated = Vehicle(
-        id: widget.vehicleId!,
+        id: int.tryParse(widget.vehicleId!) ?? 0,
         vehicleNumber: vehicleNumber,
         company: company,
         type: type,
@@ -75,7 +75,7 @@ class _VehicleFormScreenState extends State<VehicleFormScreen> {
       vehicleStore.update(updated);
     } else {
       final newVehicle = Vehicle(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        id: DateTime.now().millisecondsSinceEpoch,
         vehicleNumber: vehicleNumber,
         company: company,
         type: type,
