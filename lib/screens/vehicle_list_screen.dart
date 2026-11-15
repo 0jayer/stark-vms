@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+
 import '../app/theme.dart';
-import '../data/mock_vehicles.dart';
+import '../services/api_exception.dart';
 import '../models/vehicle.dart';
 import '../repositories/vehicle_repository.dart';
 import '../widgets/confirm_delete_dialog.dart';
@@ -33,26 +34,41 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
       vehicleNumber: vehicle.vehicleNumber,
     );
 
-    if (confirmed == true && context.mounted) {
-      // Retain existing delete behavior without touching backend in this step
-      vehicleStore.delete(vehicle.id);
+    if (confirmed != true || !context.mounted) return;
+
+    try {
+      await vehicleRepository.deleteVehicle(vehicle.id);
+      if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Vehicle "${vehicle.vehicleNumber}" removed successfully'),
+          content: Text(
+            'Vehicle "${vehicle.vehicleNumber}" removed successfully',
+          ),
           backgroundColor: AppTheme.deepBlue,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } on ApiException catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.message),
+          backgroundColor: AppTheme.errorRed,
           behavior: SnackBarBehavior.floating,
         ),
       );
     }
   }
 
-  Widget _buildContent(bool isLoading, String? errorMessage, List<Vehicle> vehicles) {
+  Widget _buildContent(
+    bool isLoading,
+    String? errorMessage,
+    List<Vehicle> vehicles,
+  ) {
     if (isLoading) {
       return const Padding(
         padding: EdgeInsets.symmetric(vertical: 64),
-        child: Center(
-          child: CircularProgressIndicator(),
-        ),
+        child: Center(child: CircularProgressIndicator()),
       );
     }
 
@@ -125,10 +141,7 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
               SizedBox(height: 4),
               Text(
                 'Click "Register Vehicle" above to add your first fleet vehicle.',
-                style: TextStyle(
-                  fontSize: 13,
-                  color: AppTheme.textSecondary,
-                ),
+                style: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
               ),
             ],
           ),
@@ -141,32 +154,16 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
         return SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: ConstrainedBox(
-            constraints: BoxConstraints(
-              minWidth: constraints.maxWidth,
-            ),
+            constraints: BoxConstraints(minWidth: constraints.maxWidth),
             child: DataTable(
               columns: const [
-                DataColumn(
-                  label: Text('Vehicle Number'),
-                ),
-                DataColumn(
-                  label: Text('Company'),
-                ),
-                DataColumn(
-                  label: Text('Type'),
-                ),
-                DataColumn(
-                  label: Text('Brand'),
-                ),
-                DataColumn(
-                  label: Text('Model'),
-                ),
-                DataColumn(
-                  label: Text('Status'),
-                ),
-                DataColumn(
-                  label: Text('Actions'),
-                ),
+                DataColumn(label: Text('Vehicle Number')),
+                DataColumn(label: Text('Company')),
+                DataColumn(label: Text('Type')),
+                DataColumn(label: Text('Brand')),
+                DataColumn(label: Text('Model')),
+                DataColumn(label: Text('Status')),
+                DataColumn(label: Text('Actions')),
               ],
               rows: vehicles.map((v) {
                 return DataRow(
@@ -196,7 +193,8 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
                               color: AppTheme.corporateBlue,
                             ),
                             tooltip: 'Edit vehicle',
-                            onPressed: () => context.go('/vehicles/edit/${v.id}'),
+                            onPressed: () =>
+                                context.go('/vehicles/edit/${v.id}'),
                           ),
                           IconButton(
                             icon: const Icon(
@@ -248,9 +246,7 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
               ),
 
               // Table / state container card
-              Card(
-                child: _buildContent(isLoading, errorMessage, vehicles),
-              ),
+              Card(child: _buildContent(isLoading, errorMessage, vehicles)),
             ],
           ),
         );

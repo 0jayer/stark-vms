@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+
 import 'package:http/http.dart' as http;
+
 import '../app/config.dart';
 import 'api_exception.dart';
 
@@ -11,26 +13,40 @@ class ApiClient {
   final http.Client _httpClient;
   final Duration timeout;
 
-  ApiClient({
-    String? baseUrl,
-    http.Client? httpClient,
-    Duration? timeout,
-  })  : baseUrl = (baseUrl ?? AppConfig.apiBaseUrl).replaceAll(RegExp(r'/+$'), ''),
-        _httpClient = httpClient ?? http.Client(),
-        timeout = timeout ?? const Duration(seconds: 10);
+  ApiClient({String? baseUrl, http.Client? httpClient, Duration? timeout})
+    : baseUrl = (baseUrl ?? AppConfig.apiBaseUrl).replaceAll(
+        RegExp(r'/+$'),
+        '',
+      ),
+      _httpClient = httpClient ?? http.Client(),
+      timeout = timeout ?? const Duration(seconds: 10);
 
-  /// Performs an HTTP GET request to the specified path (e.g. '/api/vehicles').
-  Future<dynamic> get(String path) async {
-    final uri = Uri.parse('$baseUrl$path');
+  static const _headers = {
+    'Accept': 'application/json',
+    'Content-Type': 'application/json',
+  };
 
+  Future<dynamic> get(String path) =>
+      _send(() => _httpClient.get(_uri(path), headers: _headers));
+
+  Future<dynamic> post(String path, Map<String, dynamic> body) => _send(
+    () =>
+        _httpClient.post(_uri(path), headers: _headers, body: jsonEncode(body)),
+  );
+
+  Future<dynamic> put(String path, Map<String, dynamic> body) => _send(
+    () =>
+        _httpClient.put(_uri(path), headers: _headers, body: jsonEncode(body)),
+  );
+
+  Future<dynamic> delete(String path) =>
+      _send(() => _httpClient.delete(_uri(path), headers: _headers));
+
+  Uri _uri(String path) => Uri.parse('$baseUrl$path');
+
+  Future<dynamic> _send(Future<http.Response> Function() request) async {
     try {
-      final response = await _httpClient.get(
-        uri,
-        headers: {
-          'Accept': 'application/json',
-        },
-      ).timeout(timeout);
-
+      final response = await request().timeout(timeout);
       return _processResponse(response);
     } on TimeoutException {
       throw ApiException.timeout();
@@ -57,18 +73,18 @@ class ApiClient {
       }
     }
 
-    // Success responses (2xx)
+    // 2xx. DELETE returns 204 with no body, so decoded is null.
     if (statusCode >= 200 && statusCode < 300) {
       return decoded;
     }
 
-    // Backend error responses
     if (decoded is Map<String, dynamic>) {
       throw ApiException.fromJson(statusCode, decoded);
     }
 
     throw ApiException(
-      message: 'Server returned HTTP $statusCode: ${response.reasonPhrase ?? "Error"}',
+      message:
+          'Server returned HTTP $statusCode: ${response.reasonPhrase ?? "Error"}',
       statusCode: statusCode,
     );
   }
@@ -77,4 +93,3 @@ class ApiClient {
     _httpClient.close();
   }
 }
-
