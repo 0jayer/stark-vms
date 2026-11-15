@@ -6,18 +6,17 @@ void main() {
   runApp(const VmsApp());
 }
 
-/// Root widget for the Vehicle Management System frontend.
+/// Root widget for the Stark Group Vehicle Management System frontend.
 class VmsApp extends StatelessWidget {
   const VmsApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
-      title: 'Vehicle Management System',
+      title: 'Stark Group VMS',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
-      darkTheme: AppTheme.dark,
-      themeMode: ThemeMode.system,
+      themeMode: ThemeMode.light,
       routerConfig: appRouter,
     );
   }

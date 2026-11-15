@@ -1,164 +1,179 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../app/theme.dart';
 import '../data/mock_vehicles.dart';
 import '../models/vehicle.dart';
+import '../widgets/confirm_delete_dialog.dart';
+import '../widgets/page_header.dart';
+import '../widgets/status_badge.dart';
 
-/// Screen displaying the list of all registered vehicles in a responsive data table.
-class VehicleListScreen extends StatefulWidget {
+/// Screen displaying the list of all company fleet vehicles.
+class VehicleListScreen extends StatelessWidget {
   const VehicleListScreen({super.key});
 
-  @override
-  State<VehicleListScreen> createState() => _VehicleListScreenState();
-}
-
-class _VehicleListScreenState extends State<VehicleListScreen> {
-  // Local copy of mock data to support deleting/updating during current session
-  late List<Vehicle> _vehicles;
-
-  @override
-  void initState() {
-    super.initState();
-    _vehicles = List.from(mockVehicles);
-  }
-
-  void _deleteVehicle(String id) {
-    setState(() {
-      _vehicles.removeWhere((v) => v.id == id);
-      mockVehicles.removeWhere((v) => v.id == id);
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Vehicle removed')),
+  Future<void> _handleDelete(BuildContext context, Vehicle vehicle) async {
+    final confirmed = await showConfirmDeleteDialog(
+      context: context,
+      vehicleNumber: vehicle.vehicleNumber,
     );
-  }
 
-  Widget _buildStatusChip(VehicleStatus status, ColorScheme colorScheme) {
-    Color bg;
-    Color fg;
-
-    switch (status) {
-      case VehicleStatus.available:
-        bg = Colors.green.withValues(alpha: 0.15);
-        fg = Colors.green.shade800;
-        break;
-      case VehicleStatus.inUse:
-        bg = Colors.blue.withValues(alpha: 0.15);
-        fg = Colors.blue.shade800;
-        break;
-      case VehicleStatus.maintenance:
-        bg = Colors.orange.withValues(alpha: 0.15);
-        fg = Colors.orange.shade800;
-        break;
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Text(
-        status.label,
-        style: TextStyle(
-          color: fg,
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
+    if (confirmed == true && context.mounted) {
+      vehicleStore.delete(vehicle.id);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Vehicle "${vehicle.vehicleNumber}" removed successfully'),
+          backgroundColor: AppTheme.deepBlue,
+          behavior: SnackBarBehavior.floating,
         ),
-      ),
-    );
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    return ListenableBuilder(
+      listenable: vehicleStore,
+      builder: (context, _) {
+        final vehicles = vehicleStore.vehicles;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Vehicles'),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 16.0),
-            child: FilledButton.icon(
-              onPressed: () => context.go('/vehicles/new'),
-              icon: const Icon(Icons.add),
-              label: const Text('Add Vehicle'),
-            ),
-          ),
-        ],
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Card(
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-            side: BorderSide(color: colorScheme.outlineVariant),
-          ),
-          child: _vehicles.isEmpty
-              ? const Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(32.0),
-                    child: Text('No vehicles found. Add your first vehicle!'),
-                  ),
-                )
-              : LayoutBuilder(
-                  builder: (context, constraints) {
-                    return SingleChildScrollView(
-                      child: SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: ConstrainedBox(
-                          constraints: BoxConstraints(
-                            minWidth: constraints.maxWidth,
-                          ),
-                          child: DataTable(
-                            columns: const [
-                              DataColumn(label: Text('License Plate')),
-                              DataColumn(label: Text('Make & Model')),
-                              DataColumn(label: Text('Year')),
-                              DataColumn(label: Text('Color')),
-                              DataColumn(label: Text('Status')),
-                              DataColumn(label: Text('Actions')),
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(AppTheme.pagePadding),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Page Header with main action button
+              PageHeader(
+                title: 'Fleet Vehicles',
+                subtitle: 'Manage and monitor all ${vehicles.length} registered company vehicles.',
+                action: FilledButton.icon(
+                  onPressed: () => context.go('/vehicles/new'),
+                  icon: const Icon(Icons.add, size: 18),
+                  label: const Text('Register Vehicle'),
+                ),
+              ),
+
+              // Table container
+              Card(
+                child: vehicles.isEmpty
+                    ? const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 64, horizontal: 24),
+                        child: Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.directions_car_outlined,
+                                size: 48,
+                                color: AppTheme.textMuted,
+                              ),
+                              SizedBox(height: 12),
+                              Text(
+                                'No vehicles currently registered',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppTheme.deepBlue,
+                                ),
+                              ),
+                              SizedBox(height: 4),
+                              Text(
+                                'Click "Register Vehicle" above to add your first fleet vehicle.',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: AppTheme.textSecondary,
+                                ),
+                              ),
                             ],
-                            rows: _vehicles.map((v) {
-                              return DataRow(
-                                cells: [
-                                  DataCell(Text(
-                                    v.licensePlate,
-                                    style: const TextStyle(fontWeight: FontWeight.bold),
-                                  )),
-                                  DataCell(Text('${v.make} ${v.model}')),
-                                  DataCell(Text(v.year.toString())),
-                                  DataCell(Text(v.color)),
-                                  DataCell(_buildStatusChip(v.status, colorScheme)),
-                                  DataCell(
-                                    Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        IconButton(
-                                          icon: const Icon(Icons.edit_outlined, size: 20),
-                                          tooltip: 'Edit',
-                                          onPressed: () => context.go('/vehicles/edit/${v.id}'),
-                                        ),
-                                        IconButton(
-                                          icon: const Icon(Icons.delete_outline, size: 20),
-                                          tooltip: 'Delete',
-                                          onPressed: () => _deleteVehicle(v.id),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              );
-                            }).toList(),
                           ),
                         ),
+                      )
+                    : LayoutBuilder(
+                        builder: (context, constraints) {
+                          return SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: ConstrainedBox(
+                              constraints: BoxConstraints(
+                                minWidth: constraints.maxWidth,
+                              ),
+                              child: DataTable(
+                                columns: const [
+                                  DataColumn(
+                                    label: Text('Vehicle Number'),
+                                  ),
+                                  DataColumn(
+                                    label: Text('Company'),
+                                  ),
+                                  DataColumn(
+                                    label: Text('Type'),
+                                  ),
+                                  DataColumn(
+                                    label: Text('Brand'),
+                                  ),
+                                  DataColumn(
+                                    label: Text('Model'),
+                                  ),
+                                  DataColumn(
+                                    label: Text('Status'),
+                                  ),
+                                  DataColumn(
+                                    label: Text('Actions'),
+                                  ),
+                                ],
+                                rows: vehicles.map((v) {
+                                  return DataRow(
+                                    cells: [
+                                      DataCell(
+                                        Text(
+                                          v.vehicleNumber,
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            color: AppTheme.deepBlue,
+                                          ),
+                                        ),
+                                      ),
+                                      DataCell(Text(v.company)),
+                                      DataCell(Text(v.type)),
+                                      DataCell(Text(v.brand)),
+                                      DataCell(Text(v.model)),
+                                      DataCell(StatusBadge(status: v.status)),
+                                      DataCell(
+                                        Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            IconButton(
+                                              icon: const Icon(
+                                                Icons.edit_outlined,
+                                                size: 18,
+                                                color: AppTheme.corporateBlue,
+                                              ),
+                                              tooltip: 'Edit vehicle',
+                                              onPressed: () => context.go('/vehicles/edit/${v.id}'),
+                                            ),
+                                            IconButton(
+                                              icon: const Icon(
+                                                Icons.delete_outline,
+                                                size: 18,
+                                                color: AppTheme.errorRed,
+                                              ),
+                                              tooltip: 'Delete vehicle',
+                                              onPressed: () => _handleDelete(context, v),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  );
+                                }).toList(),
+                              ),
+                            ),
+                          );
+                        },
                       ),
-                    );
-                  },
-                ),
-        ),
-      ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
-

@@ -1,53 +1,51 @@
-/// Represents a vehicle in the management system.
-class Vehicle {
-  final String id;
-  final String make;
-  final String model;
-  final int year;
-  final String color;
-  final String licensePlate;
-  final VehicleStatus status;
-
-  const Vehicle({
-    required this.id,
-    required this.make,
-    required this.model,
-    required this.year,
-    required this.color,
-    required this.licensePlate,
-    this.status = VehicleStatus.available,
-  });
-
-  /// Creates a copy of this vehicle with the given fields replaced.
-  Vehicle copyWith({
-    String? id,
-    String? make,
-    String? model,
-    int? year,
-    String? color,
-    String? licensePlate,
-    VehicleStatus? status,
-  }) {
-    return Vehicle(
-      id: id ?? this.id,
-      make: make ?? this.make,
-      model: model ?? this.model,
-      year: year ?? this.year,
-      color: color ?? this.color,
-      licensePlate: licensePlate ?? this.licensePlate,
-      status: status ?? this.status,
-    );
-  }
-}
-
-/// The current status of a vehicle.
+/// The operational status of a vehicle.
 enum VehicleStatus {
-  available('Available'),
-  inUse('In Use'),
+  active('Active'),
+  inactive('Inactive'),
   maintenance('Maintenance');
 
-  /// Human-readable label for this status.
   final String label;
   const VehicleStatus(this.label);
 }
 
+/// Represents a vehicle entity in the Vehicle Management System.
+class Vehicle {
+  final String id;
+  final String vehicleNumber;
+  final String company;
+  final String type;
+  final String brand;
+  final String model;
+  final VehicleStatus status;
+
+  const Vehicle({
+    required this.id,
+    required this.vehicleNumber,
+    required this.company,
+    required this.type,
+    required this.brand,
+    required this.model,
+    this.status = VehicleStatus.active,
+  });
+
+  /// Creates a copy of this vehicle with optional replacement fields.
+  Vehicle copyWith({
+    String? id,
+    String? vehicleNumber,
+    String? company,
+    String? type,
+    String? brand,
+    String? model,
+    VehicleStatus? status,
+  }) {
+    return Vehicle(
+      id: id ?? this.id,
+      vehicleNumber: vehicleNumber ?? this.vehicleNumber,
+      company: company ?? this.company,
+      type: type ?? this.type,
+      brand: brand ?? this.brand,
+      model: model ?? this.model,
+      status: status ?? this.status,
+    );
+  }
+}

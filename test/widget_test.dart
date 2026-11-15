@@ -7,7 +7,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Verify login screen elements are present
-    expect(find.text('Vehicle Management System'), findsOneWidget);
-    expect(find.text('Sign In'), findsOneWidget);
+    expect(find.text('Stark Group VMS'), findsOneWidget);
+    expect(find.text('Sign In to Dashboard'), findsOneWidget);
   });
 }
