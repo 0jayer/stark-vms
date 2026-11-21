@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
-import '../app/router.dart';
 import '../app/theme.dart';
+import '../services/api_exception.dart';
+import '../services/auth_service.dart';
 
-/// Clean, professional login screen for Stark Group Vehicle Management System.
+/// Login screen for Stark Group Vehicle Management System.
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -13,21 +13,42 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
+  final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
+  bool _submitting = false;
+  String? _error;
 
   @override
   void dispose() {
-    _emailController.dispose();
+    _usernameController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
 
-  void _handleLogin() {
-    if (_formKey.currentState!.validate()) {
-      isLoggedIn = true;
-      context.go('/dashboard');
+  Future<void> _handleLogin() async {
+    setState(() => _error = null);
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _submitting = true);
+    try {
+      // On success the session changes and the router redirects to /dashboard.
+      await authService.login(
+        _usernameController.text,
+        _passwordController.text,
+      );
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _submitting = false;
+        _error = e.message;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _submitting = false;
+        _error = 'Something went wrong. Please try again.';
+      });
     }
   }
 
@@ -49,7 +70,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // Corporate Logo & Header
                       Center(
                         child: Container(
                           padding: const EdgeInsets.all(14),
@@ -86,27 +106,56 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       const SizedBox(height: 32),
 
-                      // Email Field
-                      TextFormField(
-                        controller: _emailController,
-                        decoration: const InputDecoration(
-                          labelText: 'Corporate Email',
-                          hintText: 'user@starkgroup.com',
-                          prefixIcon: Icon(Icons.email_outlined, size: 20),
+                      if (_error != null)
+                        Container(
+                          margin: const EdgeInsets.only(bottom: 18),
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: AppTheme.errorRed.withValues(alpha: 0.08),
+                            border: Border.all(
+                              color: AppTheme.errorRed.withValues(alpha: 0.4),
+                            ),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Icon(Icons.error_outline,
+                                  size: 20, color: AppTheme.errorRed),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  _error!,
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    color: AppTheme.errorRed,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                        keyboardType: TextInputType.emailAddress,
+
+                      TextFormField(
+                        controller: _usernameController,
+                        enabled: !_submitting,
+                        decoration: const InputDecoration(
+                          labelText: 'Username',
+                          hintText: 'admin',
+                          prefixIcon: Icon(Icons.person_outline, size: 20),
+                        ),
                         validator: (value) {
                           if (value == null || value.trim().isEmpty) {
-                            return 'Please enter your corporate email';
+                            return 'Please enter your username';
                           }
                           return null;
                         },
                       ),
                       const SizedBox(height: 18),
 
-                      // Password Field
                       TextFormField(
                         controller: _passwordController,
+                        enabled: !_submitting,
                         decoration: InputDecoration(
                           labelText: 'Password',
                           prefixIcon: const Icon(Icons.lock_outline, size: 20),
@@ -126,8 +175,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                         obscureText: _obscurePassword,
+                        onFieldSubmitted: (_) => _submitting ? null : _handleLogin(),
                         validator: (value) {
-                          if (value == null || value.trim().isEmpty) {
+                          if (value == null || value.isEmpty) {
                             return 'Please enter your password';
                           }
                           return null;
@@ -135,10 +185,18 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       const SizedBox(height: 28),
 
-                      // Submit Button
                       FilledButton(
-                        onPressed: _handleLogin,
-                        child: const Text('Sign In to Dashboard'),
+                        onPressed: _submitting ? null : _handleLogin,
+                        child: _submitting
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Text('Sign In to Dashboard'),
                       ),
                     ],
                   ),

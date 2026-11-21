@@ -4,22 +4,21 @@ import '../screens/login_screen.dart';
 import '../screens/shell_screen.dart';
 import '../screens/vehicle_form_screen.dart';
 import '../screens/vehicle_list_screen.dart';
-
-/// In-memory mock authentication flag for demonstration.
-/// Set to true upon successful login.
-bool isLoggedIn = false;
+import '../services/auth_session.dart';
 
 /// Central GoRouter configuration for the VMS app.
 final GoRouter appRouter = GoRouter(
   initialLocation: '/login',
+  refreshListenable: AuthSession.instance,
   redirect: (context, state) {
+    final loggedIn = AuthSession.instance.isAuthenticated;
     final loggingIn = state.uri.path == '/login';
 
-    if (!isLoggedIn && !loggingIn) {
+    if (!loggedIn && !loggingIn) {
       return '/login';
     }
 
-    if (isLoggedIn && (loggingIn || state.uri.path == '/')) {
+    if (loggedIn && (loggingIn || state.uri.path == '/')) {
       return '/dashboard';
     }
 

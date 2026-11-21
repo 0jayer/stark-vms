@@ -1,53 +1,52 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-
 import 'package:http/http.dart' as http;
-
 import '../app/config.dart';
 import 'api_exception.dart';
+import 'auth_session.dart';
 
-/// Lightweight, reusable HTTP client for interacting with the Spring Boot backend.
+/// Lightweight, reusable HTTP client for the Spring Boot backend.
 class ApiClient {
   final String baseUrl;
   final http.Client _httpClient;
   final Duration timeout;
 
-  ApiClient({String? baseUrl, http.Client? httpClient, Duration? timeout})
-    : baseUrl = (baseUrl ?? AppConfig.apiBaseUrl).replaceAll(
-        RegExp(r'/+$'),
-        '',
-      ),
-      _httpClient = httpClient ?? http.Client(),
-      timeout = timeout ?? const Duration(seconds: 10);
+  ApiClient({
+    String? baseUrl,
+    http.Client? httpClient,
+    Duration? timeout,
+  })  : baseUrl = (baseUrl ?? AppConfig.apiBaseUrl).replaceAll(RegExp(r'/+$'), ''),
+        _httpClient = httpClient ?? http.Client(),
+        timeout = timeout ?? const Duration(seconds: 10);
 
-  static const _headers = {
-    'Accept': 'application/json',
-    'Content-Type': 'application/json',
-  };
+  Map<String, String> get _headers {
+    final token = AuthSession.instance.token;
+    return {
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+      if (token != null) 'Authorization': 'Bearer $token',
+    };
+  }
 
   Future<dynamic> get(String path) =>
-      _send(() => _httpClient.get(_uri(path), headers: _headers));
+      _send(path, () => _httpClient.get(_uri(path), headers: _headers));
 
-  Future<dynamic> post(String path, Map<String, dynamic> body) => _send(
-    () =>
-        _httpClient.post(_uri(path), headers: _headers, body: jsonEncode(body)),
-  );
+  Future<dynamic> post(String path, Map<String, dynamic> body) => _send(path,
+      () => _httpClient.post(_uri(path), headers: _headers, body: jsonEncode(body)));
 
-  Future<dynamic> put(String path, Map<String, dynamic> body) => _send(
-    () =>
-        _httpClient.put(_uri(path), headers: _headers, body: jsonEncode(body)),
-  );
+  Future<dynamic> put(String path, Map<String, dynamic> body) => _send(path,
+      () => _httpClient.put(_uri(path), headers: _headers, body: jsonEncode(body)));
 
   Future<dynamic> delete(String path) =>
-      _send(() => _httpClient.delete(_uri(path), headers: _headers));
+      _send(path, () => _httpClient.delete(_uri(path), headers: _headers));
 
   Uri _uri(String path) => Uri.parse('$baseUrl$path');
 
-  Future<dynamic> _send(Future<http.Response> Function() request) async {
+  Future<dynamic> _send(String path, Future<http.Response> Function() request) async {
     try {
       final response = await request().timeout(timeout);
-      return _processResponse(response);
+      return _processResponse(path, response);
     } on TimeoutException {
       throw ApiException.timeout();
     } on SocketException catch (e) {
@@ -60,7 +59,7 @@ class ApiClient {
     }
   }
 
-  dynamic _processResponse(http.Response response) {
+  dynamic _processResponse(String path, http.Response response) {
     final statusCode = response.statusCode;
     final body = response.body.trim();
 
@@ -73,9 +72,14 @@ class ApiClient {
       }
     }
 
-    // 2xx. DELETE returns 204 with no body, so decoded is null.
     if (statusCode >= 200 && statusCode < 300) {
       return decoded;
+    }
+
+    // Expired or invalid token on a protected call: drop the session so the
+    // router sends the user back to the login screen.
+    if (statusCode == 401 && !path.startsWith('/api/auth/')) {
+      AuthSession.instance.clear();
     }
 
     if (decoded is Map<String, dynamic>) {
@@ -83,8 +87,7 @@ class ApiClient {
     }
 
     throw ApiException(
-      message:
-          'Server returned HTTP $statusCode: ${response.reasonPhrase ?? "Error"}',
+      message: 'Server returned HTTP $statusCode: ${response.reasonPhrase ?? "Error"}',
       statusCode: statusCode,
     );
   }

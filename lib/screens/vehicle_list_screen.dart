@@ -21,7 +21,9 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
   @override
   void initState() {
     super.initState();
-    _loadVehicles();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _loadVehicles();
+    });
   }
 
   void _loadVehicles() {

@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'app/router.dart';
 import 'app/theme.dart';
+import 'services/auth_session.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  // Restore a saved token (if still valid) before the router first runs.
+  await AuthSession.instance.load();
   runApp(const VmsApp());
 }
 

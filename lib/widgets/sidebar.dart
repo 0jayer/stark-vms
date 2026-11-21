@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../app/router.dart';
 import '../app/theme.dart';
+import '../services/auth_service.dart';
 
 /// Desktop navigation sidebar adhering to Stark Group corporate standards.
 class Sidebar extends StatelessWidget {
@@ -101,9 +101,9 @@ class Sidebar extends StatelessWidget {
                         borderRadius: BorderRadius.circular(8),
                       ),
                     ),
-                    onPressed: () {
-                      isLoggedIn = false;
-                      context.go('/login');
+                    onPressed: () async {
+                      // Clearing the session makes the router redirect to /login.
+                      await authService.logout();
                     },
                     icon: const Icon(Icons.logout, size: 18),
                     label: const Text(
