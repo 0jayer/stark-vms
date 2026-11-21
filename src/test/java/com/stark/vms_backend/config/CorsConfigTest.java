@@ -8,6 +8,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.context.TestPropertySource;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
@@ -15,7 +16,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(VehicleController.class)
-@Import(CorsConfig.class)
+@Import({CorsConfig.class, SecurityConfig.class})
+@TestPropertySource(properties = "app.jwt.secret=test-only-secret-key-at-least-32-chars-long")
 class CorsConfigTest {
 
     @Autowired

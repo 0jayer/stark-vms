@@ -16,6 +16,9 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import tools.jackson.databind.ObjectMapper;
+import com.stark.vms_backend.config.SecurityConfig;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.TestPropertySource;
 
 import java.util.List;
 
@@ -29,7 +32,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(VehicleController.class)
-@Import(GlobalExceptionHandler.class)
+@Import({GlobalExceptionHandler.class, SecurityConfig.class})
+@TestPropertySource(properties = "app.jwt.secret=test-only-secret-key-at-least-32-chars-long")
+@WithMockUser
 class VehicleControllerTest {
 
     @Autowired

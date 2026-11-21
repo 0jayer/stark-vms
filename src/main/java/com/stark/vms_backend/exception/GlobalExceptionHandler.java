@@ -18,14 +18,23 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    @ExceptionHandler(InvalidCredentialsException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidCredentials(InvalidCredentialsException ex) {
+        ErrorResponse errorResponse = new ErrorResponse(
+                Instant.now(),
+                HttpStatus.UNAUTHORIZED.value(),
+                HttpStatus.UNAUTHORIZED.getReasonPhrase(),
+                ex.getMessage());
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
+    }
+
     @ExceptionHandler(VehicleNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleVehicleNotFound(VehicleNotFoundException ex) {
         ErrorResponse errorResponse = new ErrorResponse(
                 Instant.now(),
                 HttpStatus.NOT_FOUND.value(),
                 HttpStatus.NOT_FOUND.getReasonPhrase(),
-                ex.getMessage()
-        );
+                ex.getMessage());
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
     }
 
@@ -35,8 +44,7 @@ public class GlobalExceptionHandler {
                 Instant.now(),
                 HttpStatus.CONFLICT.value(),
                 HttpStatus.CONFLICT.getReasonPhrase(),
-                ex.getMessage()
-        );
+                ex.getMessage());
         return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
     }
 
@@ -46,8 +54,7 @@ public class GlobalExceptionHandler {
                 Instant.now(),
                 HttpStatus.CONFLICT.value(),
                 HttpStatus.CONFLICT.getReasonPhrase(),
-                "A vehicle with this vehicle number already exists"
-        );
+                "A vehicle with this vehicle number already exists");
         return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
     }
 
@@ -63,8 +70,7 @@ public class GlobalExceptionHandler {
                 HttpStatus.BAD_REQUEST.value(),
                 HttpStatus.BAD_REQUEST.getReasonPhrase(),
                 "Validation failed for one or more fields",
-                fieldErrors
-        );
+                fieldErrors);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
     }
 
@@ -74,8 +80,7 @@ public class GlobalExceptionHandler {
                 Instant.now(),
                 HttpStatus.BAD_REQUEST.value(),
                 HttpStatus.BAD_REQUEST.getReasonPhrase(),
-                "Malformed JSON request or invalid field value"
-        );
+                "Malformed JSON request or invalid field value");
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
     }
 
@@ -85,8 +90,7 @@ public class GlobalExceptionHandler {
                 Instant.now(),
                 HttpStatus.BAD_REQUEST.value(),
                 HttpStatus.BAD_REQUEST.getReasonPhrase(),
-                "Invalid parameter: " + ex.getName()
-        );
+                "Invalid parameter: " + ex.getName());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
     }
 
@@ -96,9 +100,7 @@ public class GlobalExceptionHandler {
                 Instant.now(),
                 HttpStatus.INTERNAL_SERVER_ERROR.value(),
                 HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase(),
-                "An unexpected internal server error occurred"
-        );
+                "An unexpected internal server error occurred");
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
     }
 }
-
